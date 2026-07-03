@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>GlobalSmartVoice API Test Report</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+    :root {
+      --bg: #0d1220;
+      --surface: #171d2c;
+      --tile: #242b3c;
+      --ink: #edf0f8;
+      --muted: #8d95aa;
+      --line: rgba(255,255,255,0.07);
+      --cta: #b9c5f5;
+      --blue: #1a49c8;
+      --teal: #0d4a46;
+      --green: #3ddc97;
+      --amber: #f0b90b;
+      --red: #e05252;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg);
+      color: var(--ink);
+      font-family: 'Outfit', sans-serif;
+    }
+    .header-bar {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+      padding: 3rem 2rem;
+      border-bottom: 1px solid var(--line);
+      position: relative;
+      overflow: hidden;
+    }
+    .header-bar::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -10%;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(224, 82, 82, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(40px);
+    }
+    .header-bar::after {
+      content: '';
+      position: absolute;
+      bottom: -30%; right: -10%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(26, 73, 200, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(40px);
+    }
+    .header-content {
+      max-width: 1000px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+    .header-content h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(to right, var(--ink), var(--cta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-content p {
+      margin-top: 0.5rem;
+      color: var(--muted);
+      font-weight: 300;
+      font-size: 1.1rem;
+    }
+    .container {
+      max-width: 1000px;
+      margin: -2rem auto 2rem auto;
+      padding: 0 2rem;
+      position: relative;
+      z-index: 3;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      border-color: rgba(224, 82, 82, 0.4);
+    }
+    .card-header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 16px 16px 0 0;
+    }
+    .card-header h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--cta);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-header h2::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background-color: var(--red);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--red);
+    }
+    .card-body {
+      padding: 1.75rem;
+    }
+    h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+    pre {
+      background: var(--bg);
+      padding: 1.25rem;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin-bottom: 2rem;
+      border: 1px solid var(--tile);
+      color: var(--ink);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+    pre:last-child {
+      margin-bottom: 0;
+    }
+    code {
+      font-family: 'Fira Code', 'Menlo', 'Monaco', monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    .language-bash { color: var(--green); }
+    .language-json { color: var(--cta); }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--tile);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class='header-bar'>
+    <div class='header-content'>
+      <h1>GlobalSmartVoice API Test Report</h1>
+      <p>Automated endpoint validation using application dark theme design tokens</p>
+    </div>
+  </div>
+  <div class='container'>
+    <div class='card'><div class='card-header'><h2>1. Register User</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -X POST http://localhost:3000/api/v2/auth/register -H 'Content-Type: application/json' -d '{"name":"User 48494","email":"user48494@example.com","password":"password123","accountNumber":"20624262128492"}'</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "message": "User registered successfully."
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>2. Login User</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -c cookie.txt -X POST http://localhost:3000/api/v2/auth/login -H 'Content-Type: application/json' -d '{"email":"user48494@example.com","password":"password123"}'</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "message": "Logged in successfully",
+  "user": {
+    "name": "User 48494",
+    "email": "user48494@example.com",
+    "accountNumber": "20624262128492"
+  }
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>3. Get Account Balance</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X GET http://localhost:3000/api/v2/account/balance</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "balance": 0,
+  "currency": "NPR"
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>4. Get Account Statement</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X GET http://localhost:3000/api/v2/account/statement</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "statements": [
+    {
+      "id": "1",
+      "date": "2026-07-03T10:02:16.844Z",
+      "amount": -500,
+      "description": "Retrieves the recent transaction history and account statements for the authenticated user, including transaction IDs, dates, amounts, and transaction descriptions."
+    },
+    {
+      "id": "2",
+      "date": "2026-07-02T10:02:16.844Z",
+      "amount": 15000,
+      "description": "Salary"
+    }
+  ]
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>5. Get Account Details</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X GET http://localhost:3000/api/v2/account/details</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "accountNumber": "N/A"
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>6. Block Card</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X POST http://localhost:3000/api/v2/card/block -H 'Content-Type: application/json' -d '{}'</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "message": "Card successfully blocked."
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>7. Unblock Card</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X POST http://localhost:3000/api/v2/card/unblock -H 'Content-Type: application/json' -d '{}'</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "message": "Card successfully unblocked."
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>8. Initiate Transfer</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X POST http://localhost:3000/api/v2/transfer/initiate -H 'Content-Type: application/json' -d '{"amount":5000,"toAccount":"98765432101234"}'</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "message": "Transfer initiated.",
+  "transactionId": "TXN_1783072936899"
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>9. Confirm Transfer</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X POST http://localhost:3000/api/v2/transfer/confirm -H 'Content-Type: application/json' -d '{"transactionId":"TXN_1234","otp":"123456"}'</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "message": "Transfer successful.",
+  "transactionId": "TXN_1234"
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>10. Create Complaint</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X POST http://localhost:3000/api/v2/complaint/create -H 'Content-Type: application/json' -d '{"subject":"App issue","description":"The app crashed."}'</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "message": "Complaint registered successfully.",
+  "ticketId": "TCK_1783072936916"
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>11. Loan Eligibility</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X GET http://localhost:3000/api/v2/loan/eligibility</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "eligible": false,
+  "maxAmount": 0
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>12. Send OTP</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X POST http://localhost:3000/api/v2/otp/send -H 'Content-Type: application/json' -d '{}'</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "message": "OTP sent to registered mobile/email."
+}</code></pre></div></div><div class='card'><div class='card-header'><h2>13. Verify OTP</h2></div><div class='card-body'><h3>cURL Request</h3><pre><code class='language-bash'>curl -s -b cookie.txt -X POST http://localhost:3000/api/v2/otp/verify -H 'Content-Type: application/json' -d '{"otp":"123456"}'</code></pre><h3>JSON Response</h3><pre><code class='language-json'>{
+  "message": "OTP verified successfully.",
+  "verified": true
+}</code></pre></div></div>
+  </div>
+</body>
+</html>
