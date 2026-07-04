@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
-import { requireAuth } from 'express-file-cluster/auth';
+import { requireServiceOrUser } from '../../middlewares/serviceAuth.js';
 import { Transaction } from '../../model/Transaction.js';
 import { User } from '../../model/User.js';
 import { redis } from '../../lib/redis.js';
@@ -9,7 +9,7 @@ import { redis } from '../../lib/redis.js';
 const LOG_TAG = '[transfer/confirm]';
 const isProd = process.env.NODE_ENV === 'production';
 
-export const middlewares = [requireAuth('user')];
+export const middlewares = [requireServiceOrUser('user')];
 export const POST = async (req: Request, res: Response) => {
   const { transactionId, otp } = req.body;
   console.log(LOG_TAG, 'request received', { transactionId, otp: isProd ? '[redacted]' : otp });

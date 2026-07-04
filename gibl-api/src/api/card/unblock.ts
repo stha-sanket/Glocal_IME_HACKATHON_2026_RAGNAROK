@@ -1,13 +1,13 @@
 import type { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import { requireAuth } from 'express-file-cluster/auth';
+import { requireServiceOrUser } from '../../middlewares/serviceAuth.js';
 import { User } from '../../model/User.js';
 import { redis } from '../../lib/redis.js';
 
 const LOG_TAG = '[card/unblock]';
 const isProd = process.env.NODE_ENV === 'production';
 
-export const middlewares = [requireAuth('user')];
+export const middlewares = [requireServiceOrUser('user')];
 export const POST = async (req: Request, res: Response) => {
   const authUser = (req as any).user;
   const { otp } = req.body;

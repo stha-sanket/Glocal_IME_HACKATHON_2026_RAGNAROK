@@ -8,6 +8,8 @@ import {
   StyleSheet,
   SafeAreaView,
   Platform,
+  TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -95,6 +97,7 @@ const P = {
     "M12 18v4",
   ],
   stop: ["M7 7h10v10H7z"],
+  send: ["M22 2L11 13", "M22 2l-7 20-4-9-9-4 20-7z"],
 };
 
 const LANG_OPTIONS: { label: string; k: Lang }[] = [
@@ -136,6 +139,7 @@ export default function VoiceOverlay() {
     success,
     showOtpSheet,
     userText,
+    setUserText,
     micNote,
     historyOpen,
     setHistoryOpen,
@@ -152,6 +156,23 @@ export default function VoiceOverlay() {
   const { process, stopAll } = useVoiceEngine();
   const insets = useSafeAreaInsets();
   const [interimText, setInterimText] = React.useState("");
+  const chatScrollRef = React.useRef<ScrollView>(null);
+
+  // Auto-scroll chat to bottom when messages/state changes
+  React.useEffect(() => {
+    if (keyboardOpen) {
+      setTimeout(() => {
+        chatScrollRef.current?.scrollToEnd({ animated: true });
+      }, 120);
+    }
+  }, [messages, vstate, card, confirm, success, keyboardOpen]);
+
+  const handleSendText = () => {
+    const txt = userText.trim();
+    if (!txt || vstate === "thinking") return;
+    setUserText("");
+    process(txt);
+  };
 
   // ── Speech recognition event listeners ──
   useSpeechRecognitionEvent("result", (event) => {
@@ -321,27 +342,112 @@ export default function VoiceOverlay() {
 
           {/* ── Stage ── */}
           <View style={styles.stage}>
-            {showOrb && (
-              <>
-                <VoiceOrb onPress={handleMic} />
-                <Text style={[styles.stateLabel, { color: theme.muted }]}>
-                  {STATE_LABELS[vstate]}
-                </Text>
-              </>
-            )}
-            {card === "bal" && <BalanceCard />}
-            {card === "atm" && <AtmCard />}
-            {confirm && !showOtpSheet && <ConfirmCard />}
-            {showOtpSheet && <OtpSheet />}
-            {success && <SuccessCard />}
-            {vstate === "listening" && !!interimText && (
-              <View
-                style={[styles.interimBubble, { backgroundColor: theme.tile }]}
+            {keyboardOpen ? (
+              // ── Chat Mode: Scrollable message transcript ──
+              <ScrollView
+                ref={chatScrollRef}
+                style={{ flex: 1, width: "100%" }}
+                contentContainerStyle={styles.chatContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
               >
-                <Text style={{ fontSize: 14, color: theme.ink }}>
-                  {interimText}
-                </Text>
-              </View>
+                {messages.length === 0 ? (
+                  <View style={styles.chatEmpty}>
+                    <Text style={[styles.emptyText, { color: theme.muted }]}>
+                      Type a message below or tap a suggestion chip to begin.
+                    </Text>
+                  </View>
+                ) : (
+                  messages.map((m) => (
+                    <View
+                      key={m.id}
+                      style={{
+                        alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+                        maxWidth: "84%",
+                        marginBottom: 4,
+                      }}
+                    >
+                      {m.role === "bot" && (
+                        <Text style={[styles.bubbleName, { color: theme.muted }]}>
+                          {persona}
+                        </Text>
+                      )}
+                      <View
+                        style={[
+                          styles.bubble,
+                          m.role === "user"
+                            ? { backgroundColor: theme.tile, borderTopRightRadius: 4 }
+                            : {
+                                backgroundColor: theme.surface,
+                                borderColor: theme.line,
+                                borderWidth: 1,
+                                borderTopLeftRadius: 4,
+                              },
+                        ]}
+                      >
+                        <Text style={{ fontSize: 14.5, color: theme.ink, lineHeight: 21 }}>
+                          {m.text}
+                        </Text>
+                      </View>
+                    </View>
+                  ))
+                )}
+
+                {/* Inline cards inside chat stream */}
+                {card === "bal" && <View style={styles.inlineCard}><BalanceCard /></View>}
+                {card === "atm" && <View style={styles.inlineCard}><AtmCard /></View>}
+                {confirm && !showOtpSheet && <View style={styles.inlineCard}><ConfirmCard /></View>}
+                {showOtpSheet && <View style={styles.inlineCard}><OtpSheet /></View>}
+                {success && <View style={styles.inlineCard}><SuccessCard /></View>}
+
+                {/* Thinking loader bubble */}
+                {vstate === "thinking" && (
+                  <View style={styles.thinkingRow}>
+                    <Text style={[styles.bubbleName, { color: theme.muted, marginBottom: 3 }]}>
+                      {persona}
+                    </Text>
+                    <View
+                      style={[
+                        styles.bubble,
+                        {
+                          backgroundColor: theme.surface,
+                          borderColor: theme.line,
+                          borderWidth: 1,
+                          borderTopLeftRadius: 4,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                        },
+                      ]}
+                    >
+                      <ActivityIndicator size="small" color={theme.cta} />
+                      <Text style={{ fontSize: 13, color: theme.muted }}>Thinking…</Text>
+                    </View>
+                  </View>
+                )}
+              </ScrollView>
+            ) : (
+              // ── Voice Mode: Original orb + cards ──
+              <>
+                {showOrb && (
+                  <>
+                    <VoiceOrb onPress={handleMic} />
+                    <Text style={[styles.stateLabel, { color: theme.muted }]}>
+                      {STATE_LABELS[vstate]}
+                    </Text>
+                  </>
+                )}
+                {card === "bal" && <BalanceCard />}
+                {card === "atm" && <AtmCard />}
+                {confirm && !showOtpSheet && <ConfirmCard />}
+                {showOtpSheet && <OtpSheet />}
+                {success && <SuccessCard />}
+                {vstate === "listening" && !!interimText && (
+                  <View style={[styles.interimBubble, { backgroundColor: theme.tile }]}>
+                    <Text style={{ fontSize: 14, color: theme.ink }}>{interimText}</Text>
+                  </View>
+                )}
+              </>
             )}
           </View>
 
@@ -352,85 +458,127 @@ export default function VoiceOverlay() {
               { paddingBottom: Math.max(10, insets.bottom + 6) },
             ]}
           >
+            {/* Quick-tap suggestion chips (visible in both modes) */}
             {keyboardOpen && (
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.chipsRow}
-                contentContainerStyle={{
-                  gap: 8,
-                  paddingHorizontal: 16,
-                  paddingBottom: 12,
-                }}
+                contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 10 }}
               >
                 {VOICE_CHIPS.map((c) => (
                   <TouchableOpacity
                     key={c.id}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: theme.surface,
-                        borderColor: theme.line,
-                      },
-                    ]}
+                    style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.line }]}
                     onPress={() => say(c.query)}
                   >
-                    <Text style={[styles.chipText, { color: theme.ink }]}>
-                      {c.label}
-                    </Text>
+                    <Text style={[styles.chipText, { color: theme.ink }]}>{c.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             )}
-            <View style={styles.controls}>
-              <TouchableOpacity
-                style={[
-                  styles.ctrlBtn,
-                  { backgroundColor: keyboardOpen ? theme.cta : theme.tile },
-                ]}
-                onPress={() => setKeyboardOpen(!keyboardOpen)}
-              >
-                <Ic
-                  paths={P.keyboard}
-                  size={18}
-                  sw={1.7}
-                  color={keyboardOpen ? theme.ctaInk : theme.ink}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.micBtn,
-                  {
-                    backgroundColor:
-                      vstate === "listening" ? theme.red : undefined,
-                    shadowColor: "#8fa3ef",
-                  },
-                ]}
-                onPress={handleMic}
-                activeOpacity={0.85}
-              >
-                {vstate !== "listening" && <View style={styles.micBtnGrad} />}
-                <Ic
-                  paths={vstate === "listening" ? P.stop : P.mic}
-                  size={26}
-                  sw={2}
-                  color={vstate === "listening" ? "#fff" : "#121736"}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.ctrlBtn,
-                  { backgroundColor: "rgba(224,82,82,0.16)" },
-                ]}
-                onPress={closeVoice}
-              >
-                <Ic paths={P.x} size={18} sw={2} color={theme.red} />
-              </TouchableOpacity>
-            </View>
+
+            {keyboardOpen ? (
+              // ── Chat Mode Controls: mic toggle + text input + close ──
+              <View style={styles.controls}>
+                {/* Toggle back to Voice mode */}
+                <TouchableOpacity
+                  style={[styles.ctrlBtn, { backgroundColor: theme.tile }]}
+                  onPress={() => setKeyboardOpen(false)}
+                >
+                  <Ic paths={P.mic} size={18} sw={1.7} color={theme.ink} />
+                </TouchableOpacity>
+
+                {/* Text input bar */}
+                <View
+                  style={[
+                    styles.chatInputBar,
+                    { backgroundColor: theme.surface, borderColor: theme.line },
+                  ]}
+                >
+                  <TextInput
+                    style={[styles.chatTextInput, { color: theme.ink }]}
+                    placeholder="Send a message…"
+                    placeholderTextColor={theme.muted}
+                    value={userText}
+                    onChangeText={setUserText}
+                    onSubmitEditing={handleSendText}
+                    returnKeyType="send"
+                    multiline={false}
+                    editable={vstate !== "thinking"}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.sendBtn,
+                      {
+                        backgroundColor: userText.trim() && vstate !== "thinking"
+                          ? theme.cta
+                          : "transparent",
+                      },
+                    ]}
+                    onPress={handleSendText}
+                    disabled={!userText.trim() || vstate === "thinking"}
+                  >
+                    {vstate === "thinking" ? (
+                      <ActivityIndicator size="small" color={theme.cta} />
+                    ) : (
+                      <Ic
+                        paths={P.send}
+                        size={16}
+                        sw={2}
+                        color={userText.trim() ? theme.ctaInk ?? "#fff" : theme.muted}
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {/* Close */}
+                <TouchableOpacity
+                  style={[styles.ctrlBtn, { backgroundColor: "rgba(224,82,82,0.16)" }]}
+                  onPress={closeVoice}
+                >
+                  <Ic paths={P.x} size={18} sw={2} color={theme.red} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              // ── Voice Mode Controls: keyboard toggle + mic + close ──
+              <View style={styles.controls}>
+                <TouchableOpacity
+                  style={[styles.ctrlBtn, { backgroundColor: theme.tile }]}
+                  onPress={() => setKeyboardOpen(true)}
+                >
+                  <Ic paths={P.keyboard} size={18} sw={1.7} color={theme.ink} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.micBtn,
+                    {
+                      backgroundColor: vstate === "listening" ? theme.red : undefined,
+                      shadowColor: "#8fa3ef",
+                    },
+                  ]}
+                  onPress={handleMic}
+                  activeOpacity={0.85}
+                >
+                  {vstate !== "listening" && <View style={styles.micBtnGrad} />}
+                  <Ic
+                    paths={vstate === "listening" ? P.stop : P.mic}
+                    size={26}
+                    sw={2}
+                    color={vstate === "listening" ? "#fff" : "#121736"}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.ctrlBtn, { backgroundColor: "rgba(224,82,82,0.16)" }]}
+                  onPress={closeVoice}
+                >
+                  <Ic paths={P.x} size={18} sw={2} color={theme.red} />
+                </TouchableOpacity>
+              </View>
+            )}
+
             {!!micNote && (
-              <Text style={[styles.micNote, { color: theme.muted }]}>
-                {micNote}
-              </Text>
+              <Text style={[styles.micNote, { color: theme.muted }]}>{micNote}</Text>
             )}
           </View>
 
@@ -695,6 +843,49 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderWidth: 1,
     flexShrink: 0,
+  },
+  chatContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  chatEmpty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 260,
+    paddingHorizontal: 32,
+  },
+  inlineCard: {
+    width: "100%",
+    alignItems: "center",
+    marginVertical: 4,
+  },
+  thinkingRow: {
+    alignSelf: "flex-start",
+    maxWidth: "80%",
+  },
+  chatInputBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 26,
+    paddingHorizontal: 14,
+    height: 48,
+    gap: 6,
+  },
+  chatTextInput: {
+    flex: 1,
+    fontSize: 14.5,
+    paddingVertical: 0,
+  },
+  sendBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
   chipText: { fontSize: 13 },
   controls: {
