@@ -1,0 +1,18 @@
+# Install with: pip install -r requirements.txt --break-system-packages
+# (the --break-system-packages flag is only needed on some Linux setups; on
+#  Mac/Windows just `pip install -r requirements.txt` is fine)
+
+fastapi              # the web server framework that receives audio and sends back results
+uvicorn[standard]    # the program that actually runs the FastAPI server
+python-multipart     # lets FastAPI receive file uploads (our audio blobs)
+resemblyzer          # the pretrained model that turns a voice recording into a "voiceprint" (a list of numbers)
+numpy                # math library, used here for the similarity score calculation
+soundfile            # reads audio file formats
+librosa              # audio helper library that resemblyzer depends on
+
+# You ALSO need "ffmpeg" installed on your system (not a python package).
+#   Mac:    brew install ffmpeg
+#   Ubuntu: sudo apt install ffmpeg
+#   Windows: download from ffmpeg.org and add to PATH
+# ffmpeg converts whatever format the browser records (webm) into a clean
+# wav file the model can actually read.

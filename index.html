@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoicePrint — Speaker Authentication</title>
+  <style>
+    :root {
+      --bg: #0b0f10;
+      --panel: #12181a;
+      --panel-border: #22302f;
+      --ink: #e7f3f0;
+      --ink-dim: #8ba39d;
+      --signal: #35e0b8;
+      --signal-dim: #1c7a65;
+      --danger: #ff6b5e;
+      --mono: "SF Mono", "IBM Plex Mono", "Menlo", monospace;
+      --sans: "Inter", -apple-system, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 48px 20px;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--signal);
+      margin: 0 0 8px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      margin: 0 0 6px;
+    }
+
+    .sub {
+      color: var(--ink-dim);
+      font-size: 14.5px;
+      margin: 0 0 32px;
+      line-height: 1.5;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--panel-border);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 24px;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px 0;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink-dim);
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--sans);
+    }
+
+    .tab.active {
+      background: var(--panel);
+      color: var(--signal);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 28px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--ink-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: #0b0f10;
+      border: 1px solid var(--panel-border);
+      color: var(--ink);
+      font-size: 15px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-family: var(--sans);
+      margin-bottom: 22px;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--signal-dim);
+    }
+
+    .record-block {
+      border: 1px dashed var(--panel-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .sample-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 6px;
+    }
+
+    .sample-dot {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink-dim);
+    }
+
+    .sample-dot.done {
+      border-color: var(--signal);
+      color: var(--signal);
+      background: rgba(53, 224, 184, 0.08);
+    }
+
+    .rec-btn {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: none;
+      background: var(--signal);
+      cursor: pointer;
+      margin: 14px auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rec-btn.recording {
+      background: var(--danger);
+      animation: pulse 1.4s infinite ease-in-out;
+    }
+
+    .rec-btn::after {
+      content: "";
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: #08110f;
+    }
+
+    .rec-btn.recording::after {
+      border-radius: 3px;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 107, 94, 0.45);
+      }
+
+      50% {
+        box-shadow: 0 0 0 14px rgba(255, 107, 94, 0);
+      }
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--ink-dim);
+    }
+
+    .phrase {
+      font-family: var(--mono);
+      color: var(--signal);
+      font-size: 15px;
+      margin: 6px 0 2px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 46px;
+      display: block;
+      margin-top: 10px;
+      border-radius: 6px;
+    }
+
+    .primary-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 9px;
+      border: none;
+      background: var(--signal);
+      color: #04140f;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      font-family: var(--sans);
+      margin-top: 6px;
+    }
+
+    .primary-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 18px;
+      border-radius: 10px;
+      font-family: var(--mono);
+      font-size: 14px;
+      display: none;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .result.pass {
+      background: rgba(53, 224, 184, 0.08);
+      border: 1px solid var(--signal-dim);
+      color: var(--signal);
+    }
+
+    .result.fail,
+    .result.error {
+      background: rgba(255, 107, 94, 0.08);
+      border: 1px solid #7a2c24;
+      color: var(--danger);
+    }
+
+    .score-bar-track {
+      height: 6px;
+      background: #0b0f10;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .score-bar-fill {
+      height: 100%;
+      background: currentColor;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: var(--ink-dim);
+      font-size: 12px;
+      margin-top: 24px;
+      font-family: var(--mono);
+    }
+
+    .status-line {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--ink-dim);
+      margin-top: 14px;
+      min-height: 16px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrap">
+    <p class="eyebrow">Speaker Verification</p>
+    <h1>VoicePrint</h1>
+    <p class="sub">
+      Client ID is mocked here for the demo — in a real integration this
+      would come from your existing login/session system, not a text box.
+    </p>
+
+    <div class="tabs">
+      <button class="tab active" id="tabEnroll" onclick="switchTab('enroll')">Enroll</button>
+      <button class="tab" id="tabVerify" onclick="switchTab('verify')">Verify</button>
+    </div>
+
+    <!-- ENROLL PANEL -->
+    <div class="panel" id="enrollPanel">
+      <label for="enrollClientId">Client ID (mocked)</label>
+      <input type="text" id="enrollClientId" placeholder="e.g. demo_client_001">
+
+      <div class="record-block">
+        <div class="sample-row" id="sampleDots">
+          <div class="sample-dot" id="dot0">1</div>
+          <div class="sample-dot" id="dot1">2</div>
+        </div>
+        <p class="hint" id="enrollHint">Record 2 samples, ~3-4 sec each, speaking naturally</p>
+        <button class="rec-btn" id="enrollRecBtn" onclick="toggleEnrollRecording()"></button>
+        <canvas id="vizEnroll" width="400" height="46" style="display:none"></canvas>
+        <div class="status-line" id="enrollStatus"></div>
+      </div>
+
+      <button class="primary-btn" id="enrollSubmitBtn" disabled onclick="submitEnroll()">Create voiceprint</button>
+      <div class="result" id="enrollResult"></div>
+    </div>
+
+    <!-- VERIFY PANEL -->
+    <div class="panel" id="verifyPanel" style="display:none">
+      <label for="verifyClientId">Client ID (mocked)</label>
+      <input type="text" id="verifyClientId" placeholder="e.g. demo_client_001">
+
+      <div class="record-block">
+        <p class="hint">Say this phrase aloud:</p>
+        <p class="phrase" id="challengePhrase">— press record to get a phrase —</p>
+        <button class="rec-btn" id="verifyRecBtn" onclick="toggleVerifyRecording()"></button>
+        <canvas id="vizVerify" width="400" height="46" style="display:none"></canvas>
+        <div class="status-line" id="verifyStatus"></div>
+      </div>
+
+      <button class="primary-btn" id="verifySubmitBtn" disabled onclick="submitVerify()">Verify identity</button>
+      <div class="result" id="verifyResult"></div>
+    </div>
+
+    <p class="footer-note">FastAPI + Resemblyzer · cosine similarity · SQLite (local, mocked client_id)</p>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8001";
+
+    function switchTab(tab) {
+      document.getElementById('tabEnroll').classList.toggle('active', tab === 'enroll');
+      document.getElementById('tabVerify').classList.toggle('active', tab === 'verify');
+      document.getElementById('enrollPanel').style.display = tab === 'enroll' ? 'block' : 'none';
+      document.getElementById('verifyPanel').style.display = tab === 'verify' ? 'block' : 'none';
+    }
+
+    // Shared recorder: captures mic audio and draws a live waveform so the
+    // user gets feedback that recording is actually happening.
+    function makeRecorder(canvasId) {
+      return {
+        mediaRecorder: null, chunks: [], stream: null, audioCtx: null, analyser: null, animId: null,
+        canvas: document.getElementById(canvasId),
+        async start() {
+          this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          this.mediaRecorder = new MediaRecorder(this.stream);
+          this.chunks = [];
+          this.mediaRecorder.ondataavailable = (e) => this.chunks.push(e.data);
+          this.mediaRecorder.start();
+          this._visualize();
+        },
+        stop() {
+          return new Promise((resolve) => {
+            this.mediaRecorder.onstop = () => {
+              this.stream.getTracks().forEach(t => t.stop());
+              if (this.audioCtx) this.audioCtx.close();
+              cancelAnimationFrame(this.animId);
+              resolve(new Blob(this.chunks, { type: 'audio/webm' }));
+            };
+            this.mediaRecorder.stop();
+          });
+        },
+        _visualize() {
+          this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const source = this.audioCtx.createMediaStreamSource(this.stream);
+          this.analyser = this.audioCtx.createAnalyser();
+          this.analyser.fftSize = 256;
+          source.connect(this.analyser);
+          const bufferLength = this.analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+          const ctx = this.canvas.getContext('2d');
+          this.canvas.style.display = 'block';
+          const draw = () => {
+            this.animId = requestAnimationFrame(draw);
+            this.analyser.getByteFrequencyData(dataArray);
+            ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            const barWidth = (this.canvas.width / bufferLength) * 2.2;
+            let x = 0;
+            for (let i = 0; i < bufferLength; i++) {
+              const barHeight = (dataArray[i] / 255) * this.canvas.height;
+              ctx.fillStyle = '#35e0b8';
+              ctx.fillRect(x, this.canvas.height - barHeight, barWidth - 1, barHeight);
+              x += barWidth;
+            }
+          };
+          draw();
+        }
+      };
+    }
+
+    // ============================================================
+    // ENROLL
+    // ============================================================
+    const enrollRecorder = makeRecorder('vizEnroll');
+    let enrollSamples = [];
+    let enrollIsRecording = false;
+
+    async function toggleEnrollRecording() {
+      const btn = document.getElementById('enrollRecBtn');
+      const status = document.getElementById('enrollStatus');
+      if (enrollSamples.length >= 2) return;
+
+      if (!enrollIsRecording) {
+        enrollIsRecording = true;
+        btn.classList.add('recording');
+        status.textContent = 'Recording... click again to stop';
+        await enrollRecorder.start();
+      } else {
+        enrollIsRecording = false;
+        btn.classList.remove('recording');
+        status.textContent = 'Processing sample...';
+        const blob = await enrollRecorder.stop();
+        enrollSamples.push(blob);
+        document.getElementById(`dot${enrollSamples.length - 1}`).classList.add('done');
+        status.textContent = `Captured ${enrollSamples.length} of 2 samples`;
+        if (enrollSamples.length >= 2) {
+          document.getElementById('enrollSubmitBtn').disabled = false;
+          document.getElementById('enrollHint').textContent = 'Ready to create voiceprint';
+          btn.style.opacity = '0.35';
+          btn.style.pointerEvents = 'none';
+        }
+      }
+    }
+
+    async function submitEnroll() {
+      const clientId = document.getElementById('enrollClientId').value.trim();
+      const resultEl = document.getElementById('enrollResult');
+      const submitBtn = document.getElementById('enrollSubmitBtn');
+
+      if (!clientId) {
+        resultEl.className = 'result error show';
+        resultEl.textContent = 'Enter a client ID first.';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating voiceprint...';
+
+      const formData = new FormData();
+      formData.append('client_id', clientId);
+      enrollSamples.forEach((blob, i) => formData.append('files', blob, `sample${i}.webm`));
+
+      try {
+        const res = await fetch(`${API_BASE}/enroll`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Enrollment failed');
+        resultEl.className = 'result pass show';
+        resultEl.textContent = `✓ Voiceprint created for "${data.client_id}" (${data.samples_used} samples)`;
+        submitBtn.textContent = 'Enrolled ✓';
+      } catch (err) {
+        resultEl.className = 'result error show';
+        resultEl.textContent = `✗ ${err.message}`;
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create voiceprint';
+      }
+    }
+
+    // ============================================================
+    // VERIFY
+    // ============================================================
+    const verifyRecorder = makeRecorder('vizVerify');
+    let verifySample = null;
+    let verifyIsRecording = false;
+    let currentPhrase = '';
+
+    async function fetchChallenge() {
+      try {
+        const res = await fetch(`${API_BASE}/challenge`);
+        const data = await res.json();
+        currentPhrase = data.phrase;
+        document.getElementById('challengePhrase').textContent = `"${data.phrase}"`;
+      } catch {
+        document.getElementById('challengePhrase').textContent = '(could not reach server)';
+      }
+    }
+
+    async function toggleVerifyRecording() {
+      const btn = document.getElementById('verifyRecBtn');
+      const status = document.getElementById('verifyStatus');
+      if (!verifyIsRecording && !currentPhrase) await fetchChallenge();
+
+      if (!verifyIsRecording) {
+        verifyIsRecording = true;
+        btn.classList.add('recording');
+        status.textContent = 'Recording... click again to stop';
+        await verifyRecorder.start();
+      } else {
+        verifyIsRecording = false;
+        btn.classList.remove('recording');
+        status.textContent = 'Sample captured — ready to verify';
+        verifySample = await verifyRecorder.stop();
+        document.getElementById('verifySubmitBtn').disabled = false;
+      }
+    }
+
+    async function submitVerify() {
+      const clientId = document.getElementById('verifyClientId').value.trim();
+      const resultEl = document.getElementById('verifyResult');
+      const submitBtn = document.getElementById('verifySubmitBtn');
+
+      if (!clientId) {
+        resultEl.className = 'result error show';
+        resultEl.textContent = 'Enter a client ID first.';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Verifying...';
+
+      const formData = new FormData();
+      formData.append('client_id', clientId);
+      formData.append('file', verifySample, 'attempt.webm');
+
+      try {
+        const res = await fetch(`${API_BASE}/verify`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Verification failed');
+
+        const pct = Math.round(data.similarity * 100);
+        resultEl.className = `result ${data.match ? 'pass' : 'fail'} show`;
+        resultEl.innerHTML = `
+      ${data.match ? '✓ ACCESS GRANTED' : '✗ ACCESS DENIED'}<br>
+      similarity: ${data.similarity} (threshold ${data.threshold})<br>
+      speech detected: ${data.speech_seconds_detected}s
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+    `;
+      } catch (err) {
+        resultEl.className = 'result error show';
+        resultEl.textContent = `✗ ${err.message}`;
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Verify identity';
+      verifySample = null;
+      currentPhrase = '';
+      document.getElementById('verifySubmitBtn').disabled = true;
+    }
+
+    fetchChallenge();
+  </script>
+
+</body>
+
+</html>
