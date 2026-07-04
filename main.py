@@ -137,10 +137,7 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
 # ENDPOINTS
 # --------------------------------------------------------------------------
 
-@app.get("/challenge")
-def get_challenge():
-    """Frontend calls this before recording a verify attempt, to get a fresh phrase."""
-    return {"phrase": random.choice(CHALLENGE_PHRASES)}
+
 
 
 @app.post("/enroll")
@@ -157,10 +154,10 @@ async def enroll(client_id: str = Form(...), files: list[UploadFile] = File(...)
     client_id = client_id.strip().lower()
     if not client_id:
         raise HTTPException(status_code=400, detail="client_id is required.")
-    if len(files) < 2:
+    if len(files) < 5:
         raise HTTPException(
             status_code=400,
-            detail="Please provide at least 2 recordings for a stable voiceprint.",
+            detail="Please provide at least 5 recordings for a stable voiceprint.",
         )
 
     embeddings = []

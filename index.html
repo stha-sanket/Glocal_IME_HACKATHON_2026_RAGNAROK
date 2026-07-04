@@ -139,6 +139,7 @@
       gap: 12px;
       justify-content: center;
       margin-bottom: 6px;
+      flex-wrap: wrap;
     }
 
     .sample-dot {
@@ -322,8 +323,11 @@
         <div class="sample-row" id="sampleDots">
           <div class="sample-dot" id="dot0">1</div>
           <div class="sample-dot" id="dot1">2</div>
+          <div class="sample-dot" id="dot2">3</div>
+          <div class="sample-dot" id="dot3">4</div>
+          <div class="sample-dot" id="dot4">5</div>
         </div>
-        <p class="hint" id="enrollHint">Record 2 samples, ~3-4 sec each, speaking naturally</p>
+        <p class="hint" id="enrollHint">Record 5 samples, ~3-4 sec each, speaking naturally</p>
         <button class="rec-btn" id="enrollRecBtn" onclick="toggleEnrollRecording()"></button>
         <canvas id="vizEnroll" width="400" height="46" style="display:none"></canvas>
         <div class="status-line" id="enrollStatus"></div>
@@ -339,8 +343,6 @@
       <input type="text" id="verifyClientId" placeholder="e.g. demo_client_001">
 
       <div class="record-block">
-        <p class="hint">Say this phrase aloud:</p>
-        <p class="phrase" id="challengePhrase">— press record to get a phrase —</p>
         <button class="rec-btn" id="verifyRecBtn" onclick="toggleVerifyRecording()"></button>
         <canvas id="vizVerify" width="400" height="46" style="display:none"></canvas>
         <div class="status-line" id="verifyStatus"></div>
@@ -426,7 +428,7 @@
     async function toggleEnrollRecording() {
       const btn = document.getElementById('enrollRecBtn');
       const status = document.getElementById('enrollStatus');
-      if (enrollSamples.length >= 2) return;
+      if (enrollSamples.length >= 5) return;
 
       if (!enrollIsRecording) {
         enrollIsRecording = true;
@@ -440,8 +442,8 @@
         const blob = await enrollRecorder.stop();
         enrollSamples.push(blob);
         document.getElementById(`dot${enrollSamples.length - 1}`).classList.add('done');
-        status.textContent = `Captured ${enrollSamples.length} of 2 samples`;
-        if (enrollSamples.length >= 2) {
+        status.textContent = `Captured ${enrollSamples.length} of 5 samples`;
+        if (enrollSamples.length >= 5) {
           document.getElementById('enrollSubmitBtn').disabled = false;
           document.getElementById('enrollHint').textContent = 'Ready to create voiceprint';
           btn.style.opacity = '0.35';
@@ -489,23 +491,10 @@
     const verifyRecorder = makeRecorder('vizVerify');
     let verifySample = null;
     let verifyIsRecording = false;
-    let currentPhrase = '';
-
-    async function fetchChallenge() {
-      try {
-        const res = await fetch(`${API_BASE}/challenge`);
-        const data = await res.json();
-        currentPhrase = data.phrase;
-        document.getElementById('challengePhrase').textContent = `"${data.phrase}"`;
-      } catch {
-        document.getElementById('challengePhrase').textContent = '(could not reach server)';
-      }
-    }
 
     async function toggleVerifyRecording() {
       const btn = document.getElementById('verifyRecBtn');
       const status = document.getElementById('verifyStatus');
-      if (!verifyIsRecording && !currentPhrase) await fetchChallenge();
 
       if (!verifyIsRecording) {
         verifyIsRecording = true;
@@ -560,11 +549,8 @@
       submitBtn.disabled = false;
       submitBtn.textContent = 'Verify identity';
       verifySample = null;
-      currentPhrase = '';
       document.getElementById('verifySubmitBtn').disabled = true;
     }
-
-    fetchChallenge();
   </script>
 
 </body>
