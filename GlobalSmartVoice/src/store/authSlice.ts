@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/tool
 import { apiRequest, ApiError } from '../api/client';
 
 export interface AuthUser {
+  id: string;
   name: string;
   email: string;
   accountNumber: string;
@@ -34,7 +35,7 @@ export const bootstrapSession = createAsyncThunk<AuthUser | null>(
   'auth/bootstrapSession',
   async () => {
     try {
-      const details = await apiRequest<{ name: string; email: string; accountNumber: string; isCardBlocked: boolean }>(
+      const details = await apiRequest<AuthUser>(
         '/account/details',
       );
       return details;

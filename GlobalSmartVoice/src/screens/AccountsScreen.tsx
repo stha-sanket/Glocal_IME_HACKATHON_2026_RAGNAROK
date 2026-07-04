@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../hooks/useAppContext';
+import { FavouritesModal } from '../components/FavouritesModal';
 
 export default function AccountsScreen() {
   const { theme, masked, toggleMask } = useApp();
+  const [favouritesOpen, setFavouritesOpen] = useState(false);
   const balance = masked ? '• • • • • •' : 'Rs. 84,560.84';
 
   return (
@@ -34,6 +36,16 @@ export default function AccountsScreen() {
             Interest: <Text style={[styles.interestVal, { color: theme.ink }]}>13.46</Text>
           </Text>
         </View>
+
+        <TouchableOpacity
+          style={[styles.favouritesLink, { backgroundColor: theme.surface, borderColor: theme.line }]}
+          activeOpacity={0.75}
+          onPress={() => setFavouritesOpen(true)}
+        >
+          <Ionicons name="people-outline" size={20} color={theme.ink} />
+          <Text style={[styles.favouritesLinkText, { color: theme.ink }]}>Favourite Accounts</Text>
+          <Ionicons name="chevron-forward" size={18} color={theme.muted} />
+        </TouchableOpacity>
       </ScrollView>
 
       <View style={styles.bottomAction}>
@@ -42,6 +54,8 @@ export default function AccountsScreen() {
           <Text style={[styles.openBtnText, { color: theme.ctaInk }]}>Open New Account</Text>
         </TouchableOpacity>
       </View>
+
+      <FavouritesModal visible={favouritesOpen} onClose={() => setFavouritesOpen(false)} />
     </View>
   );
 }
@@ -60,6 +74,11 @@ const styles = StyleSheet.create({
   rateText: { color: '#06281a', fontSize: 12.5, fontWeight: '700' },
   interest: { fontSize: 13, marginTop: 8 },
   interestVal: { fontWeight: '600' },
+  favouritesLink: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    borderRadius: 14, borderWidth: 1, padding: 16, marginTop: 14,
+  },
+  favouritesLinkText: { flex: 1, fontSize: 14.5, fontWeight: '600' },
   bottomAction: { padding: 20, paddingBottom: 12 },
   openBtn: { height: 48, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   openBtnText: { fontWeight: '600', fontSize: 15 },
