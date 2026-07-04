@@ -1,4 +1,43 @@
+# ── React Native / Expo (GlobalSmartVoice) ───────────────────────────────────
 GlobalSmartVoice/node_modules/
 GlobalSmartVoice/.expo/
 GlobalSmartVoice/android/
 GlobalSmartVoice/ios/
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.env
+.venv
+env/
+venv/
+ENV/
+
+# ── Piper TTS – large binary voice models ────────────────────────────────────
+*.onnx
+*.onnx.json
+
+# ── Jupyter Notebooks ────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── OS / Editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.suo
+*.user
+
+# ── Logs & temp ──────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
