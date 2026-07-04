@@ -2,6 +2,14 @@ import React, { useRef, useCallback } from 'react';
 import * as Speech from 'expo-speech';
 import { useApp, VoiceState } from './useAppContext';
 import { processQuery, detectLang, ConfirmAction } from '../utils/nlu';
+import { apiRequest, ApiError } from '../api/client';
+import { playBase64Wav } from '../utils/audio';
+
+interface ConverseResponse {
+  text: string;
+  audio: string;
+  mock?: boolean;
+}
 
 export function useVoiceEngine() {
   const {
@@ -13,13 +21,12 @@ export function useVoiceEngine() {
     setCardBlocked,
   } = useApp();
 
-  const thinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const spkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopPlaybackRef = useRef<(() => void) | null>(null);
 
   const stopAll = useCallback(() => {
     try { Speech.stop(); } catch (_) {}
-    if (thinkTimerRef.current) clearTimeout(thinkTimerRef.current);
-    if (spkTimerRef.current) clearTimeout(spkTimerRef.current);
+    stopPlaybackRef.current?.();
+    stopPlaybackRef.current = null;
   }, []);
 
   const speak = useCallback(
@@ -53,7 +60,7 @@ export function useVoiceEngine() {
   );
 
   const respond = useCallback(
-    (text: string) => {
+    async (text: string) => {
       const L =
         lang === 'auto'
           ? detectLang(text)
@@ -61,13 +68,28 @@ export function useVoiceEngine() {
           ? detectLang(text) === 'ne' ? 'ne' : 'rom'
           : lang;
 
-      const result = processQuery(text, lang);
-      pushMsg('bot', result.reply);
-      if (result.card) setCard(result.card);
-      if (result.confirm) storeConfirm(result.confirm);
-      speak(result.reply, L);
+      try {
+        const result = await apiRequest<ConverseResponse>('/voice/converse', {
+          method: 'POST',
+          body: { text },
+        });
+        pushMsg('bot', result.text);
+        setVstate('speaking');
+        await playBase64Wav(result.audio, (stop) => {
+          stopPlaybackRef.current = stop;
+        });
+        stopPlaybackRef.current = null;
+        setVstate('idle');
+      } catch (err) {
+        const message =
+          err instanceof ApiError
+            ? err.message
+            : 'Something went wrong reaching the assistant. Please try again.';
+        pushMsg('bot', message);
+        speak(message, L);
+      }
     },
-    [lang, pushMsg, setCard, storeConfirm, speak]
+    [lang, pushMsg, setVstate, speak]
   );
 
   const process = useCallback(
@@ -79,7 +101,7 @@ export function useVoiceEngine() {
       setConfirm(null);
       setSuccess(null);
       setMicNote('');
-      thinkTimerRef.current = setTimeout(() => respond(text), 900);
+      respond(text);
     },
     [pushMsg, setUserText, setVstate, setCard, setConfirm, setSuccess, setMicNote, respond]
   );
