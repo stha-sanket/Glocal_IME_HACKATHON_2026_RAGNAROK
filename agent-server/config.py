@@ -2,6 +2,46 @@
 Minimal config for the NepGlish banking NLU classifier.
 """
 import os
+
+def _parse_and_set_env(filepath):
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    k = k.strip()
+                    v = v.strip().strip("'\"")
+                    if k and v:
+                        os.environ[k] = v
+    except Exception:
+        pass
+
+def load_env_file():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+    
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # Search up to root directory
+    for _ in range(4):
+        p1 = os.path.join(current_dir, ".env")
+        if os.path.isfile(p1):
+            _parse_and_set_env(p1)
+            return
+        p2 = os.path.join(current_dir, "gibl-api", ".env")
+        if os.path.isfile(p2):
+            _parse_and_set_env(p2)
+            return
+        parent = os.path.dirname(current_dir)
+        if parent == current_dir:
+            break
+        current_dir = parent
+
+load_env_file()
+
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 MODEL_NAME = os.environ.get("SAHAYAK_MODEL", "gemma4:e2b")
 REQUEST_TIMEOUT_SEC = int(os.environ.get("SAHAYAK_TIMEOUT", "180"))

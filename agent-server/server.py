@@ -395,10 +395,13 @@ async def process(
 @app.get("/health", tags=["Health"], summary="Health check")
 async def health():
     """Returns server status and active session count."""
+    from config import DATA_LAYER_SERVICE_SECRET
     return {
         "status": "ok",
         "active_sessions": len(sessions),
         "timestamp": datetime.utcnow().isoformat() + "Z",
+        "service_secret_set": bool(DATA_LAYER_SERVICE_SECRET),
+        "service_secret_len": len(DATA_LAYER_SERVICE_SECRET),
     }
 
 
