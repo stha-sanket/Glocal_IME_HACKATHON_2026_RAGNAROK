@@ -77,6 +77,9 @@ interface AppState {
 
   keyboardOpen: boolean;
   setKeyboardOpen: (v: boolean) => void;
+
+  ttsEnabled: boolean;
+  setTtsEnabled: (v: boolean) => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -103,6 +106,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
 
   const theme = isDark ? DarkTheme : LightTheme;
 
@@ -181,6 +185,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setLangMenuOpen,
         keyboardOpen,
         setKeyboardOpen,
+        ttsEnabled,
+        setTtsEnabled,
       }}
     >
       {children}

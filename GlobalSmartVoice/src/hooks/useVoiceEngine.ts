@@ -3,11 +3,10 @@ import * as Speech from 'expo-speech';
 import { useApp, VoiceState } from './useAppContext';
 import { processQuery, detectLang, ConfirmAction } from '../utils/nlu';
 import { apiRequest, ApiError } from '../api/client';
-import { playBase64Wav } from '../utils/audio';
 
 interface ConverseResponse {
   text: string;
-  audio: string;
+  audio?: string; // optional — server may still send it but we now use on-device TTS
   mock?: boolean;
 }
 
@@ -19,6 +18,7 @@ export function useVoiceEngine() {
     setShowOtpSheet, setPendingAction,
     setConfirm: storeConfirm,
     setCardBlocked,
+    ttsEnabled,
   } = useApp();
 
   const stopPlaybackRef = useRef<(() => void) | null>(null);
@@ -54,9 +54,10 @@ export function useVoiceEngine() {
       setConfirm(null);
       setShowOtpSheet(false);
       setSuccess({ title: c.done.title, sub: c.done.sub });
-      speak(c.done.speak, c.lang);
+      if (ttsEnabled) speak(c.done.speak, c.lang);
+      else setVstate('idle');
     },
-    [pushMsg, setConfirm, setSuccess, setShowOtpSheet, setCardBlocked, speak]
+    [ttsEnabled, pushMsg, setConfirm, setSuccess, setShowOtpSheet, setCardBlocked, speak, setVstate]
   );
 
   const respond = useCallback(
@@ -74,22 +75,23 @@ export function useVoiceEngine() {
           body: { text },
         });
         pushMsg('bot', result.text);
-        setVstate('speaking');
-        await playBase64Wav(result.audio, (stop) => {
-          stopPlaybackRef.current = stop;
-        });
-        stopPlaybackRef.current = null;
-        setVstate('idle');
+        if (ttsEnabled) {
+          // On-device TTS via expo-speech (server no longer synthesises audio)
+          speak(result.text, L);
+        } else {
+          setVstate('idle');
+        }
       } catch (err) {
         const message =
           err instanceof ApiError
             ? err.message
             : 'Something went wrong reaching the assistant. Please try again.';
         pushMsg('bot', message);
-        speak(message, L);
+        if (ttsEnabled) speak(message, L);
+        else setVstate('idle');
       }
     },
-    [lang, pushMsg, setVstate, speak]
+    [lang, ttsEnabled, pushMsg, setVstate, speak]
   );
 
   const process = useCallback(

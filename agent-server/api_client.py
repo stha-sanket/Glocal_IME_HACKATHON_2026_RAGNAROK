@@ -191,8 +191,7 @@ class BankingAPIClient:
         Returns: {"statements": [...transaction list...]}
         Maps to intent: mini_statement
         """
-        url = f"/account/statement?clientId={self.user_id}" if self.user_id else "/account/statement"
-        resp = self._get(url)
+        resp = self._get("/account/statement")
         return resp.json()
 
     def block_card(self, otp: str = None) -> dict:
@@ -241,30 +240,26 @@ class BankingAPIClient:
         Returns: {"eligible": bool, "maxAmount": number}
         Maps to intent: loan_inquiry
         """
-        resp = self._get(f"/loan/eligibility?clientId={self.user_id}")
+        resp = self._get("/loan/eligibility")
         return resp.json()
 
     def send_otp(self, phone_number: str = None) -> dict:
         """
         POST /otp/send
-        Payload: {"clientId": user_id}
+        Payload: {"clientId": user_id}  — injected by _post
         Maps to intent: otp_verification
         """
-        resp = self._post("/otp/send", payload={
-            "clientId": self.user_id,
-        })
+        resp = self._post("/otp/send", payload={})
         return resp.json()
 
     def verify_otp(self, phone_number: str = None, otp: str = None) -> dict:
         """
         POST /otp/verify
-        Payload: {"clientId": user_id, "otp": str}
+        Payload: {"clientId": user_id, "otp": str}  — clientId injected by _post
         Returns: {"message": str, "verified": bool}
         """
-        # Support positional-arg compat where phone_number slot may carry the OTP value
         actual_otp = otp if otp is not None else phone_number
         resp = self._post("/otp/verify", payload={
-            "clientId": self.user_id,
             "otp": str(actual_otp),
         })
         return resp.json()
@@ -272,12 +267,11 @@ class BankingAPIClient:
     def initiate_transfer(self, to_account: str, amount: int, note: str = "") -> dict:
         """
         POST /transfer/initiate
-        Payload: {"clientId": user_id, "accountNumber": str, "amount": int, "note"?: str}
+        Payload: {"accountNumber": str, "amount": int, "note"?: str}  — clientId injected by _post
         Maps to intent: fund_transfer
         Returns: {"message": str, "transactionId": str}
         """
         payload: dict = {
-            "clientId": self.user_id,
             "accountNumber": str(to_account),
             "amount": int(amount),
         }
@@ -300,19 +294,17 @@ class BankingAPIClient:
 
     def get_favourites(self) -> dict:
         """
-        GET /favourites/list
-        Query params: clientId
+        GET /favourites/list  — clientId injected by _get as query param
         """
-        resp = self._get(f"/favourites/list?clientId={self.user_id}")
+        resp = self._get("/favourites/list")
         return resp.json()
 
     def create_favourite(self, nickname: str, account_number: str) -> dict:
         """
-        POST /favourites/create
-        Payload: {"clientId": str, "nickname": str, "accountNumber": str}
+        POST /favourites/create  — clientId injected by _post
+        Payload: {"nickname": str, "accountNumber": str}
         """
         resp = self._post("/favourites/create", payload={
-            "clientId": self.user_id,
             "nickname": nickname,
             "accountNumber": str(account_number),
         })
@@ -360,25 +352,41 @@ class BankingAPIClient:
     # ─────────────────────────────────────────
 
     def _get(self, endpoint: str) -> requests.Response:
-        resp = self.session.get(
-            f"{self.base_url}{endpoint}",
-            timeout=self.timeout,
-        )
-        if resp.status_code == 401:
+        """
+        Internal GET helper.
+        When authenticated as service (X-Service-Key mode), clientId is appended
+        as a query parameter so requireServiceOrUser middleware can identify the user.
+        """
+        # Inject clientId for service-key calls (middleware reads from query string on GETs)
+        is_service = bool(self.session.headers.get("X-Service-Key"))
+        if is_service and self.user_id:
+            sep = "&" if "?" in endpoint else "?"
+            url = f"{self.base_url}{endpoint}{sep}clientId={self.user_id}"
+        else:
+            url = f"{self.base_url}{endpoint}"
+
+        resp = self.session.get(url, timeout=self.timeout)
+        if resp.status_code == 401 and not is_service:
             self._relogin()
-            resp = self.session.get(f"{self.base_url}{endpoint}", timeout=self.timeout)
+            resp = self.session.get(url, timeout=self.timeout)
         self._raise_for_status(resp)
         return resp
 
     def _post(self, endpoint: str, payload: dict) -> requests.Response:
-        resp = self.session.post(
-            f"{self.base_url}{endpoint}",
-            json=payload,
-            timeout=self.timeout,
-        )
-        if resp.status_code == 401:
+        """
+        Internal POST helper.
+        When authenticated as service (X-Service-Key mode), clientId is injected
+        into the request body so requireServiceOrUser middleware can identify the user.
+        """
+        is_service = bool(self.session.headers.get("X-Service-Key"))
+        if is_service and self.user_id:
+            payload = {"clientId": self.user_id, **payload}
+
+        url = f"{self.base_url}{endpoint}"
+        resp = self.session.post(url, json=payload, timeout=self.timeout)
+        if resp.status_code == 401 and not is_service:
             self._relogin()
-            resp = self.session.post(f"{self.base_url}{endpoint}", json=payload, timeout=self.timeout)
+            resp = self.session.post(url, json=payload, timeout=self.timeout)
         self._raise_for_status(resp)
         return resp
 

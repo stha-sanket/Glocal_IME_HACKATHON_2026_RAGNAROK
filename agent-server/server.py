@@ -30,7 +30,6 @@ from pydantic import BaseModel, EmailStr, Field
 from agent import build_graph, fresh_state
 from api_client import BankingAPIClient, APIError
 from config import DATA_LAYER_SERVICE_SECRET
-from tts import synthesize_wav_base64
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Logging
@@ -380,13 +379,10 @@ async def process(
         f"phase={result.get('phase')} | '{user_text[:50]}' → '{reply[:60]}'"
     )
 
-    try:
-        audio_b64 = synthesize_wav_base64(reply)
-    except Exception as e:
-        logger.error(f"TTS error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"TTS synthesis failed: {e}")
-
-    return ProcessResponse(text=reply, audio=audio_b64)
+    # TTS is handled on-device by the mobile app (expo-speech) to avoid
+    # the 2-3s Piper synthesis latency + large base64 WAV network payload.
+    # Return an empty audio string — the mobile ignores it.
+    return ProcessResponse(text=reply, audio="")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Routes — Health

@@ -152,6 +152,8 @@ export default function VoiceOverlay() {
     messages,
     isDark,
     toggleTheme,
+    ttsEnabled,
+    setTtsEnabled,
   } = useApp();
   const { process, stopAll } = useVoiceEngine();
   const insets = useSafeAreaInsets();
@@ -745,7 +747,34 @@ export default function VoiceOverlay() {
                   ))}
                 </View>
 
+                {/* TTS toggle */}
                 <View style={styles.themeRow}>
+                  <View>
+                    <Text style={[styles.themeLabel, { color: theme.ink }]}>
+                      Speak replies
+                    </Text>
+                    <Text style={{ fontSize: 11, color: theme.muted, marginTop: 1 }}>
+                      {ttsEnabled ? "On — replies read aloud" : "Off — text only, faster"}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.toggle,
+                      { backgroundColor: ttsEnabled ? theme.cta : theme.tile },
+                    ]}
+                    onPress={() => setTtsEnabled(!ttsEnabled)}
+                  >
+                    <View
+                      style={[
+                        styles.knob,
+                        { transform: [{ translateX: ttsEnabled ? 20 : 0 }] },
+                      ]}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Light theme toggle */}
+                <View style={[styles.themeRow, { marginTop: 12 }]}>
                   <Text style={[styles.themeLabel, { color: theme.ink }]}>
                     Light theme
                   </Text>
