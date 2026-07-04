@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bilingual TTS Tester</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-family: inherit;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      resize: vertical;
+    }
+    .tts-container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #ccc;
+    }
+    audio {
+      width: 100%;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="tts-container">
+    <h1>Bilingual TTS Tester</h1>
+    <p class="subtitle">Paste your mixed English & Nepali text below and click "Speak".</p>
+
+    <form id="tts-form">
+      <textarea id="user-input" placeholder="Example: Hello नमस्ते how are you?" required></textarea>
+      <button type="submit" id="speak-btn">Speak Audio</button>
+    </form>
+
+    <div id="status" class="status"></div>
+    <audio id="player" controls></audio>
+  </div>
+
+  <script src="script.js?v=3"></script>
+</body>
+</html>
